@@ -77,11 +77,12 @@ def main():
     # ===== Milestone 3 =====
     print("Collecting password policy...")
     snapshot["password_policy"] = helpers.get_password_policy(snapshot)
-    
 
-    # ===== Milestone 4 =====
-    # print("Collecting installed software...")
-    # snapshot["installed_software"] = helpers.get_installed_software(snapshot)
+
+    # ===== Milestone 4 ======
+
+    print("Collecting installed software...")
+    snapshot["installed_software"] = helpers.get_installed_software(snapshot)
 
     # ===== Milestone 5 =====
     # print("Collecting running processes...")
@@ -121,7 +122,7 @@ def main():
 
     # Build the output filename: baseline_HOSTNAME_TIMESTAMP.json
     hostname = socket.gethostname()
-    timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output_filename = "baseline_" + hostname + "_" + timestamp + ".json"
 
     # Save the snapshot to a JSON file. The default=str argument is a
