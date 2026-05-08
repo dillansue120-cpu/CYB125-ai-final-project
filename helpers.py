@@ -312,13 +312,55 @@ def get_system_identity(snapshot):
 def get_password_policy(snapshot):
     info = {}
     try:
-        # TODO Milestone 3: parse `net accounts` and populate the 7 fields
-        # listed in the comment block above. Use run_command() to invoke
-        # the command, then walk its output line by line.
-        pass
+        # Run the 'net accounts' command to get password policy settings
+        # This command outputs lines like "Minimum password length: 0"
+        output = run_command(["net", "accounts"])
+
+        # Parse each line of the output
+        for line in output.splitlines():
+            # Skip lines that don't contain a colon (not label:value pairs)
+            if ":" not in line:
+                continue
+
+            # Split on the first colon only, in case the value contains colons
+            # (though unlikely here, it's a safe habit)
+            label, value = line.split(":", 1)
+            label = label.strip()
+            value = value.strip()
+
+            # Map each label to the corresponding field in info
+            # Convert numeric strings to int, or None if "Never"
+            if label == "Minimum password length":
+                info["minimum_password_length"] = parse_value(value)
+            elif label == "Minimum password age (days)":
+                info["minimum_password_age_days"] = parse_value(value)
+            elif label == "Maximum password age (days)":
+                info["maximum_password_age_days"] = parse_value(value)
+            elif label == "Length of password history maintained":
+                info["password_history_length"] = parse_value(value)
+            elif label == "Lockout threshold":
+                info["lockout_threshold"] = parse_value(value)
+            elif label == "Lockout duration (minutes)":
+                info["lockout_duration_minutes"] = parse_value(value)
+            elif label == "Lockout observation window (minutes)":
+                info["lockout_observation_window_minutes"] = parse_value(value)
+
     except Exception as e:
         add_warning(snapshot, "password_policy failed: " + str(e))
     return info
+
+
+# Helper function to parse a value: convert to int if numeric, None if "Never"
+# This handles the case where some fields say "Never" instead of a number
+def parse_value(value_str):
+    if value_str.lower() == "never":
+        return None
+    try:
+        return int(value_str)
+    except ValueError:
+        # If it's not "Never" and not a number, return None as a fallback
+        # (though in practice, net accounts should only output numbers or "Never")
+        return None
 
 
 # -------------------------------------------------------------------
@@ -342,7 +384,8 @@ def get_password_policy(snapshot):
 #   {
 #     "display_name":    "Microsoft Visual Studio Code",
 #     "display_version": "1.89.1",
-#     "publisher":       "Microsoft Corporation",
+#     "publisher":       "Microsoft Corporation",helpers.py
+
 #     "install_date":    "2025-09-02"
 #   }
 #
