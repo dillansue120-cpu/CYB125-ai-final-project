@@ -497,10 +497,46 @@ def get_installed_software(snapshot):
 
 def add_running_processes(snapshot):
     try:
-        # TODO Milestone 5: parse `tasklist /fo csv` and append one dict
-        # per process to snapshot["running_processes"].
-        # Remember: this function does NOT return anything.
-        pass
+        # Run the 'tasklist /fo csv' command to get a CSV list of running processes
+        # This command outputs a CSV with headers, then one row per process
+        output = run_command(["tasklist", "/fo", "csv"])
+
+        # Parse the CSV output using the csv module
+        # io.StringIO wraps the string output so csv.reader can treat it like a file
+        reader = csv.reader(io.StringIO(output))
+
+        # Skip the first row, which is the header row ("Image Name","PID",...)
+        next(reader, None)
+
+        # Process each remaining row in the CSV
+        for row in reader:
+            # Ensure the row has at least 2 columns (Image Name and PID)
+            # Some rows might be malformed, so skip them
+            if len(row) < 2:
+                continue
+
+            # Extract Image Name (column 0) and PID (column 1)
+            image_name = row[0].strip('"')  # Remove surrounding quotes
+            pid_str = row[1].strip('"')
+
+            # Convert PID to integer; skip the row if conversion fails
+            # (e.g., if PID is not a number, which is unlikely but possible)
+            try:
+                pid = int(pid_str)
+            except ValueError:
+                continue
+
+            # Append a dict for this process to snapshot["running_processes"]
+            # The other fields (parent_pid, executable_path, command_line) are not available from tasklist
+            # so they are set to None as specified in the requirements
+            snapshot["running_processes"].append({
+                "pid": pid,
+                "name": image_name,
+                "parent_pid": None,
+                "executable_path": None,
+                "command_line": None,
+            })
+
     except Exception as e:
         add_warning(snapshot, "running_processes failed: " + str(e))
 
